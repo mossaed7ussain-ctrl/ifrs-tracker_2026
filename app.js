@@ -551,14 +551,14 @@ function fireStudyNotification(){
     navigator.serviceWorker.ready.then(reg=>{
       reg.showNotification(title, {
         body,
-        icon: 'icons/icon-192.png',
-        badge: 'icons/icon-192.png',
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
         vibrate: [200,100,200],
         tag: 'ifrs-daily-reminder'
       });
     });
   } else if(Notification.permission==='granted'){
-    new Notification(title, {body, icon:'icons/icon-192.png'});
+    new Notification(title, {body, icon:'icon-192.png'});
   }
 }
 
