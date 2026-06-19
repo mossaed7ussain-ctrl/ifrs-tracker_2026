@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#5B2A86">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IFRS Tracker">
+<title>IFRS Dip Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root{
+  /* Vivid palette */
+  --purple:#6D28D9;
+  --purple-light:#A78BFA;
+  --purple-dark:#4C1D95;
+  --turquoise:#0D9488;
+  --turquoise-light:#5EEAD4;
+  --coral:#F43F5E;
+  --coral-light:#FB7185;
+  --pink:#EC4899;
+  --pink-light:#F9A8D4;
+  --amber:#F59E0B;
+
+  --bg:#FAFAFC;
+  --bg-card:#FFFFFF;
+  --bg-soft:#F3F0FA;
+  --text-primary:#1E1B2E;
+  --text-secondary:#6B6480;
+  --border:#E8E4F3;
+
+  --grad-hero: linear-gradient(135deg, #6D28D9 0%, #EC4899 100%);
+  --grad-turq: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%);
+  --grad-coral: linear-gradient(135deg, #F43F5E 0%, #F59E0B 100%);
+
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:22px;
+  --shadow-card: 0 2px 12px rgba(109,40,217,0.07);
+  --shadow-pop: 0 8px 24px rgba(109,40,217,0.18);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Cairo',sans-serif;
+  background:var(--bg);
+  color:var(--text-primary);
+  min-height:100vh;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.numfont{font-family:'Outfit',sans-serif}
+
+#app{max-width:480px;margin:0 auto;padding:0 14px 90px;min-height:100vh}
+
+/* HEADER */
+.appbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--grad-hero);
+  padding:calc(env(safe-area-inset-top) + 14px) 16px 16px;
+  margin:0 -14px 14px;
+  border-radius:0 0 24px 24px;
+  color:white;
+  box-shadow:var(--shadow-pop);
+}
+.appbar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.appbar-title{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.appbar-date{font-size:11px;background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;backdrop-filter:blur(4px)}
+.bell-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;border:none;color:white;cursor:pointer;position:relative}
+.bell-dot{position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--amber);border:1.5px solid var(--purple)}
+
+/* NAV */
+.nav{display:flex;gap:4px;background:var(--bg-soft);padding:5px;border-radius:18px;margin-bottom:16px}
+.nav-btn{flex:1;font-size:11.5px;padding:9px 4px;border:none;background:none;color:var(--text-secondary);border-radius:14px;cursor:pointer;font-weight:600;font-family:'Cairo',sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .2s}
+.nav-btn.active{background:white;color:var(--purple);box-shadow:0 2px 8px rgba(109,40,217,0.15)}
+.nav-btn svg{width:18px;height:18px}
+
+.sec{display:none;animation:fadeIn .3s ease}
+.sec.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* TODAY HERO CARD */
+.hero-card{
+  background:var(--grad-hero);
+  border-radius:var(--radius-lg);
+  padding:18px;
+  margin-bottom:12px;
+  color:white;
+  box-shadow:var(--shadow-pop);
+  position:relative;
+  overflow:hidden;
+}
+.hero-card::before{
+  content:'';position:absolute;width:140px;height:140px;border-radius:50%;
+  background:rgba(255,255,255,0.08);top:-50px;left:-30px;
+}
+.hero-phase{font-size:11px;opacity:0.85;margin-bottom:4px;font-weight:600;position:relative;z-index:1}
+.hero-task{font-size:17px;font-weight:700;line-height:1.4;margin-bottom:12px;position:relative;z-index:1}
+.hero-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:relative;z-index:1}
+.hero-chip{font-size:10.5px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.2);display:flex;align-items:center;gap:4px;font-weight:600}
+.hero-bar-wrap{height:7px;background:rgba(255,255,255,0.25);border-radius:4px;overflow:hidden;position:relative;z-index:1}
+.hero-bar-fill{height:100%;background:white;border-radius:4px;transition:width .6s}
+.hero-pct-lbl{font-size:10.5px;margin-top:5px;opacity:0.85;position:relative;z-index:1}
+
+/* STAT GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.stat-card{
+  border-radius:var(--radius-md);
+  padding:13px 14px;
+  box-shadow:var(--shadow-card);
+  position:relative;
+  overflow:hidden;
+}
+.stat-card.c1{background:linear-gradient(135deg,#FFFFFF,#F3F0FA)}
+.stat-icon{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.stat-lbl{font-size:11px;color:var(--text-secondary);margin-bottom:2px;font-weight:600}
+.stat-val{font-size:24px;font-weight:700;color:var(--text-primary);font-family:'Outfit',sans-serif;line-height:1}
+.stat-sub{font-size:10.5px;color:var(--text-secondary);margin-top:3px}
+
+.section-title{font-size:13px;font-weight:700;color:var(--text-primary);margin:18px 0 10px;display:flex;align-items:center;gap:6px}
+.section-title .dot{width:6px;height:6px;border-radius:50%}
+
+/* LOG FORM */
+.log-form{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
+.log-title{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text-primary);display:flex;align-items:center;gap:6px}
+.frow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.frow label{font-size:12px;color:var(--text-secondary);min-width:62px;font-weight:600}
+.frow select,.frow input{flex:1;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text-primary);font-size:13px;font-family:'Cairo',sans-serif;direction:rtl}
+.frow select:focus,.frow input:focus{outline:none;border-color:var(--purple)}
+.btn-add{width:100%;padding:13px;border:none;border-radius:var(--radius-sm);background:var(--grad-hero);color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Cairo',sans-serif;box-shadow:0 4px 14px rgba(109,40,217,0.3)}
+.btn-add:active{transform:scale(0.98)}
+
+/* LOG ITEMS */
+.log-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px;box-shadow:0 0 0 3px rgba(0,0,0,0.04)}
+.log-info{flex:1}
+.log-name{font-size:13px;color:var(--text-primary);line-height:1.3;font-weight:600}
+.log-meta{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.log-hrs{font-size:13px;font-weight:700;color:var(--purple);flex-shrink:0;font-family:'Outfit',sans-serif}
+
+.summary-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
+.summary-row{display:flex;gap:18px;margin-bottom:10px}
+.summary-item .num{font-size:22px;font-weight:700;color:var(--text-primary);font-family:'Outfit',sans-serif;line-height:1}
+.summary-item .lbl{font-size:10.5px;color:var(--text-secondary);margin-top:3px;font-weight:600}
+
+/* SCHEDULE */
+.phase-info{border-radius:var(--radius-md);padding:13px 15px;font-size:12.5px;margin-bottom:14px;line-height:1.6;font-weight:600}
+.std-card{background:var(--bg-card);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
+.std-card.current{border-color:var(--purple);box-shadow:0 4px 16px rgba(109,40,217,0.18)}
+.std-num{font-size:12px;font-weight:700;min-width:26px;font-family:'Outfit',sans-serif}
+.std-info{flex:1;min-width:0}
+.std-name{font-size:12.5px;color:var(--text-primary);line-height:1.3;font-weight:600}
+.std-dates{font-size:10.5px;color:var(--text-secondary);margin-top:2px}
+.today-tag{font-size:9px;background:var(--grad-hero);color:white;padding:2px 7px;border-radius:8px;margin-right:5px;font-weight:700}
+.status-pill{font-size:10.5px;padding:5px 10px;border-radius:20px;cursor:pointer;border:none;font-weight:700;white-space:nowrap;flex-shrink:0}
+.s-todo{background:#EDEBF5;color:#8B85A3}
+.s-active{background:#DDEBFF;color:#1E5FC9}
+.s-done{background:#D7F5E9;color:#0E8050}
+.s-review{background:#FFE8D1;color:#B9560A}
+
+/* PROGRESS */
+.prog-hero{background:var(--grad-turq);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;color:white;box-shadow:0 8px 24px rgba(13,148,136,0.25)}
+.big-pct{font-size:46px;font-weight:800;font-family:'Outfit',sans-serif;line-height:1}
+.prog-bar-wrap{height:10px;background:rgba(255,255,255,0.3);border-radius:5px;margin:12px 0 8px;overflow:hidden}
+.prog-bar-fill{height:100%;border-radius:5px;background:white;transition:width .6s}
+
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px}
+.wday{text-align:center}
+.wday-dot{width:32px;height:32px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Outfit',sans-serif}
+.w-studied{background:var(--grad-turq);color:white;box-shadow:0 3px 8px rgba(13,148,136,0.3)}
+.w-today{border:2px solid var(--purple);color:var(--purple);background:white}
+.w-miss{background:var(--bg-soft);color:var(--text-secondary)}
+.wday-lbl{font-size:9.5px;color:var(--text-secondary);font-weight:600}
+
+.chart-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
+.chart-title{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text-primary)}
+
+.std-prog-row{padding:10px 0;border-bottom:1px solid var(--border)}
+.std-prog-row:last-child{border-bottom:none}
+.spr-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.spr-name{font-size:12px;color:var(--text-primary);flex:1;line-height:1.3;font-weight:600}
+.spr-bar-wrap{flex:1;height:6px;background:var(--bg-soft);border-radius:3px;overflow:hidden}
+.spr-bar-fill{height:100%;border-radius:3px}
+.spr-hrs{font-size:10.5px;color:var(--text-secondary);min-width:32px;text-align:left;font-family:'Outfit',sans-serif;font-weight:600}
+
+/* SETTINGS */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-lbl{font-size:13px;color:var(--text-primary);font-weight:600}
+.setting-sub{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.setting-row input,.setting-row select{font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text-primary);max-width:130px;font-family:'Cairo',sans-serif}
+.calc-val{font-size:12.5px;font-weight:700;color:var(--purple)}
+
+.btn-secondary{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Cairo',sans-serif}
+.btn-danger{color:var(--coral);border-color:var(--coral-light)}
+
+/* NOTIFICATION SETTINGS */
+.notif-banner{background:var(--grad-coral);border-radius:var(--radius-md);padding:14px;color:white;font-size:12.5px;margin-bottom:14px;line-height:1.6;font-weight:600}
+.notif-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.25);margin-top:6px}
+
+/* INSTALL PROMPT */
+.install-banner{
+  position:fixed;bottom:16px;left:14px;right:14px;max-width:452px;margin:0 auto;
+  background:var(--grad-hero);border-radius:var(--radius-md);padding:14px 16px;
+  color:white;box-shadow:var(--shadow-pop);display:none;z-index:100;
+  align-items:center;gap:12px;
+}
+.install-banner.show{display:flex}
+.install-banner .txt{flex:1;font-size:12.5px;font-weight:600;line-height:1.4}
+.install-banner button{background:white;color:var(--purple);border:none;padding:8px 16px;border-radius:20px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;white-space:nowrap}
+.install-close{background:none!important;color:white!important;padding:4px!important;font-size:18px!important}
+
+.toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--text-primary);color:white;padding:12px 22px;border-radius:30px;
+  font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  opacity:0;transition:all .3s;z-index:200;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.empty-state{text-align:center;padding:24px 12px;color:var(--text-secondary);font-size:13px}
+.empty-state svg{margin-bottom:8px;opacity:0.4}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="appbar">
+    <div class="appbar-top">
+      <div class="appbar-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 13L9 19L21 5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        IFRS Tracker
+      </div>
+      <button class="bell-btn" onclick="go('settings');setTimeout(()=>document.getElementById('notif-section').scrollIntoView({behavior:'smooth'}),100)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="bell-dot" id="bell-dot" style="display:none"></span>
+      </button>
+    </div>
+    <div class="appbar-date" id="topdate"></div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="go('today')">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12L5 10M5 10L12 3L19 10M5 10V20A1 1 0 006 21H9M19 10L21 12M19 10V20A1 1 0 0118 21H15M9 21A1 1 0 0010 20V16A1 1 0 0111 15H13A1 1 0 0114 16V20A1 1 0 0015 21M9 21H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      اليوم
+    </button>
+    <button class="nav-btn" onclick="go('schedule')">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10H21M8 3V7M16 3V7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      الخطة
+    </button>
+    <button class="nav-btn" onclick="go('progress')">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 21H21M6 21V11M12 21V6M18 21V14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      التقدم
+    </button>
+    <button class="nav-btn" onclick="go('settings')">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M19.4 13a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V19a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H4a2 2 0 110-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34h0a1.7 1.7 0 001-1.55V4a2 2 0 114 0v.09a1.7 1.7 0 001 1.55h0a1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87v0a1.7 1.7 0 001.55 1H20a2 2 0 110 4h-.09a1.7 1.7 0 00-1.55 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+      الإعداد
+    </button>
+  </div>
+
+  <!-- TODAY -->
+  <div id="sec-today" class="sec active">
+    <div class="hero-card" id="today-hero"></div>
+
+    <div class="stats-grid">
+      <div class="stat-card c1">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#6D28D9,#A78BFA)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="white" stroke-width="2.3"/><path d="M3 10H21" stroke="white" stroke-width="2.3"/></svg>
+        </div>
+        <div class="stat-lbl">أيام المذاكرة المتبقية</div>
+        <div class="stat-val" id="days-left-study">—</div>
+        <div class="stat-sub">من 115 يوم</div>
+      </div>
+      <div class="stat-card c1">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#F43F5E,#F59E0B)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 6 9 6 14a6 6 0 0012 0c0-5-6-12-6-12z" stroke="white" stroke-width="2.3" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="stat-lbl">السلسلة الحالية</div>
+        <div class="stat-val" id="streak-val">0</div>
+        <div class="stat-sub">يوم متتالي</div>
+      </div>
+      <div class="stat-card c1">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#0D9488,#5EEAD4)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2.3"/><path d="M12 7V12L15 14" stroke="white" stroke-width="2.3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="stat-lbl">ساعات هذا الأسبوع</div>
+        <div class="stat-val" id="week-hrs">0</div>
+        <div class="stat-sub" id="week-target">من 14–21 ساعة</div>
+      </div>
+      <div class="stat-card c1">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#EC4899,#F9A8D4)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12L11 14L15 10" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2.3"/></svg>
+        </div>
+        <div class="stat-lbl">معايير مكتملة</div>
+        <div class="stat-val" id="done-count">0</div>
+        <div class="stat-sub">من 32 وحدة</div>
+      </div>
+    </div>
+
+    <div class="log-form">
+      <div class="log-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="#6D28D9" stroke-width="2.5" stroke-linecap="round"/></svg>
+        تسجيل إنجاز اليوم
+      </div>
+      <div class="frow">
+        <label>المعيار</label>
+        <select id="log-unit"></select>
+      </div>
+      <div class="frow">
+        <label>الساعات</label>
+        <input type="number" id="log-hrs" min="0.5" max="6" step="0.5" value="2">
+      </div>
+      <div class="frow">
+        <label>ملاحظة</label>
+        <input type="text" id="log-note" placeholder="مثال: انهيت الجزء الأول">
+      </div>
+      <div class="frow">
+        <label>الحالة</label>
+        <select id="log-status">
+          <option value="active">جاري المذاكرة</option>
+          <option value="done">مكتمل ✓</option>
+          <option value="review">في المراجعة</option>
+        </select>
+      </div>
+      <button class="btn-add" onclick="addLog()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        حفظ الإنجاز
+      </button>
+    </div>
+
+    <div class="section-title"><span class="dot" style="background:var(--purple)"></span>آخر الإنجازات</div>
+    <div class="summary-card" id="recent-logs" style="padding:14px 16px"></div>
+
+    <div class="section-title"><span class="dot" style="background:var(--turquoise)"></span>ملخص هذا الأسبوع</div>
+    <div class="summary-card" id="week-summary"></div>
+
+    <div class="section-title"><span class="dot" style="background:var(--coral)"></span>ملخص هذا الشهر</div>
+    <div class="summary-card" id="month-summary"></div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="sec-schedule" class="sec">
+    <div class="phase-info" id="phase-info"></div>
+    <div id="schedule-list"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="sec-progress" class="sec">
+    <div class="prog-hero">
+      <div style="font-size:12px;opacity:0.9;font-weight:700;margin-bottom:4px">إجمالي التقدم في الخطة</div>
+      <div class="big-pct" id="big-pct">0%</div>
+      <div class="prog-bar-wrap"><div class="prog-bar-fill" id="main-prog" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;opacity:0.9;font-weight:600">
+        <span id="prog-done-lbl">0 معيار مكتمل</span>
+        <span id="prog-hrs-lbl">0 ساعة</span>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="dot" style="background:var(--purple)"></span>الأيام السبعة الأخيرة</div>
+    <div class="chart-card">
+      <div class="week-strip" id="week-strip"></div>
+    </div>
+
+    <div class="section-title"><span class="dot" style="background:var(--coral)"></span>ساعات آخر 14 يوم</div>
+    <div class="chart-card">
+      <svg id="bar-chart" viewBox="0 0 320 140" style="width:100%;height:140px;overflow:visible"></svg>
+    </div>
+
+    <div class="section-title"><span class="dot" style="background:var(--turquoise)"></span>توزيع الوقت حسب المعيار</div>
+    <div class="chart-card">
+      <svg id="donut-chart" viewBox="0 0 200 200" style="width:100%;max-width:200px;height:auto;display:block;margin:0 auto 12px"></svg>
+      <div id="donut-legend"></div>
+    </div>
+
+    <div class="section-title"><span class="dot" style="background:var(--pink)"></span>تقدم كل معيار</div>
+    <div class="chart-card" id="std-progress-list"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="sec-settings" class="sec">
+    <div class="log-form" id="notif-section">
+      <div class="log-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        التنبيه اليومي
+      </div>
+      <div class="notif-banner" id="notif-banner">
+        فعّل التنبيه عشان يفكرك تذاكر كل يوم في وقت ثابت.
+        <div class="notif-status" id="notif-status-badge">● غير مفعّل</div>
+      </div>
+      <div class="frow">
+        <label>الوقت</label>
+        <input type="time" id="notif-time" value="20:00">
+      </div>
+      <button class="btn-add" onclick="enableNotifications()" id="notif-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        تفعيل التنبيه اليومي
+      </button>
+    </div>
+
+    <div class="log-form">
+      <div class="log-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#6D28D9" stroke-width="2"/><path d="M3 10H21M8 3V7M16 3V7" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/></svg>
+        إعدادات الخطة
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">تاريخ البداية</div><div class="setting-sub">أول يوم مذاكرة</div></div>
+        <input type="date" id="set-start" onchange="saveSetting()">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">أيام المذاكرة</div><div class="setting-sub">قبل المراجعة</div></div>
+        <input type="number" id="set-study-days" value="115" onchange="saveSetting()">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">أيام المراجعة</div><div class="setting-sub">مراجعة وامتحانات</div></div>
+        <input type="number" id="set-review-days" value="45" onchange="saveSetting()">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">ساعات يومية مستهدفة</div><div class="setting-sub">2–3 ساعة</div></div>
+        <select id="set-daily-hrs" onchange="saveSetting()">
+          <option value="2">2 ساعة</option>
+          <option value="2.5" selected>2.5 ساعة</option>
+          <option value="3">3 ساعات</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div class="setting-lbl">نهاية المذاكرة</div>
+        <div class="calc-val" id="calc-end-study">—</div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-lbl">موعد الامتحان</div>
+        <div class="calc-val" id="calc-exam">—</div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-lbl">إجمالي الساعات المطلوبة</div>
+        <div class="calc-val" id="calc-total-hrs">—</div>
+      </div>
+    </div>
+
+    <button class="btn-secondary btn-danger" onclick="resetAll()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M19 6L18 20A2 2 0 0116 22H8A2 2 0 016 20L5 6M10 6V4A2 2 0 0112 2H12A2 2 0 0114 4V6" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      مسح كل البيانات
+    </button>
+  </div>
+</div>
+
+<div class="install-banner" id="install-banner">
+  <div class="txt">ثبّت التطبيق على شاشة موبايلك عشان يفتح كأيقونة وتقدر تستقبل تنبيهات</div>
+  <button onclick="doInstall()">تثبيت</button>
+  <button class="install-close" onclick="dismissInstall()">✕</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
