@@ -226,11 +226,87 @@ body{
 
 .empty-state{text-align:center;padding:24px 12px;color:var(--text-secondary);font-size:13px}
 .empty-state svg{margin-bottom:8px;opacity:0.4}
+
+/* LOGIN SCREEN */
+#login-screen, #auth-screen{
+  position:fixed;inset:0;z-index:300;
+  background:var(--grad-hero);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+}
+#login-screen.hide{display:none}
+.login-card{
+  background:white;border-radius:var(--radius-lg);padding:28px 24px;
+  max-width:380px;width:100%;box-shadow:var(--shadow-pop);
+}
+.login-logo{
+  width:64px;height:64px;border-radius:18px;background:var(--grad-hero);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+}
+.login-title{font-size:19px;font-weight:700;text-align:center;color:var(--text-primary);margin-bottom:4px}
+.login-sub{font-size:12.5px;text-align:center;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+.login-frow{margin-bottom:12px}
+.login-frow label{font-size:12px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:5px}
+.login-frow input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text-primary);font-size:14px;font-family:'Cairo',sans-serif;direction:rtl;letter-spacing:0.5px}
+.login-frow input:focus{outline:none;border-color:var(--purple)}
+.login-frow input#login-pin{direction:ltr;text-align:center;font-family:'Outfit',sans-serif;font-size:20px;letter-spacing:6px}
+.login-btn{width:100%;padding:13px;border:none;border-radius:var(--radius-sm);background:var(--grad-hero);color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;font-family:'Cairo',sans-serif;box-shadow:0 4px 14px rgba(109,40,217,0.3)}
+.login-btn:disabled{opacity:0.6}
+.login-toggle{text-align:center;margin-top:14px;font-size:12.5px;color:var(--text-secondary)}
+.login-toggle a{color:var(--purple);font-weight:700;cursor:pointer;text-decoration:none}
+.login-error{font-size:12px;color:var(--coral);text-align:center;margin-top:10px;min-height:16px;font-weight:600}
+.login-loading{text-align:center;color:white;font-size:13px;font-weight:600}
+.sync-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;background:rgba(255,255,255,0.2);padding:3px 9px;border-radius:20px;font-weight:700}
+.sync-saving{background:rgba(245,158,11,0.35)!important}
+.sync-offline{background:rgba(244,63,94,0.35)!important}
+.login-tabs{display:flex;gap:4px;background:var(--bg-soft);padding:4px;border-radius:14px;margin-bottom:18px}
+.login-tab{flex:1;font-size:12.5px;padding:8px 4px;border:none;background:none;color:var(--text-secondary);border-radius:10px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif}
+.login-tab.active{background:white;color:var(--purple);box-shadow:0 2px 6px rgba(109,40,217,0.15)}
+.login-frow input#login-email{direction:ltr;text-align:left;letter-spacing:normal}
+.login-frow input#login-password{direction:ltr;text-align:left;letter-spacing:normal;font-family:'Cairo',sans-serif;font-size:14px}
 </style>
 </head>
 <body>
 
-<div id="app">
+<div id="login-screen">
+  <div class="login-card" id="login-card">
+    <div class="login-loading" id="login-loading" style="color:var(--text-primary)">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="margin:0 auto 10px;display:block;animation:spin 1s linear infinite"><circle cx="12" cy="12" r="9" stroke="#6D28D9" stroke-width="2.5" stroke-dasharray="40" stroke-linecap="round"/></svg>
+      جاري التحميل...
+    </div>
+  </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<div id="auth-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 13L9 19L21 5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="login-title">IFRS Dip Tracker</div>
+    <div class="login-sub" id="auth-sub">سجّل دخولك لمتابعة تقدمك من أي جهاز. بياناتك خاصة بيك بس.</div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-login" onclick="switchAuthTab('login')">تسجيل الدخول</button>
+      <button class="login-tab" id="tab-signup" onclick="switchAuthTab('signup')">حساب جديد</button>
+    </div>
+
+    <div class="login-frow">
+      <label>اسمك</label>
+      <input type="text" id="auth-email" placeholder="مثال: محمد أحمد" autocomplete="name">
+    </div>
+    <div class="login-frow">
+      <label>الكود السري (تختاره بنفسك)</label>
+      <input type="password" id="auth-password" placeholder="4 أحرف أو أرقام على الأقل" autocomplete="off">
+    </div>
+    <button class="login-btn" id="auth-submit-btn" data-mode="login" onclick="handleAuthSubmit()">دخول</button>
+    <div class="login-error" id="auth-error"></div>
+    <div class="login-toggle" id="auth-footer">مفيش حساب؟ <a onclick="switchAuthTab('signup')">اعمل حساب جديد</a></div>
+    <div class="login-toggle" style="margin-top:6px;opacity:0.75">احفظ اسمك وكودك كويس — هتستخدمهم على أي جهاز تاني</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
   <div class="appbar">
     <div class="appbar-top">
       <div class="appbar-title">
@@ -242,7 +318,13 @@ body{
         <span class="bell-dot" id="bell-dot" style="display:none"></span>
       </button>
     </div>
-    <div class="appbar-date" id="topdate"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="appbar-date" id="topdate"></div>
+      <div class="sync-badge" id="sync-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 6 9 6 14a6 6 0 0012 0c0-5-6-12-6-12z" stroke="white" stroke-width="2.5"/></svg>
+        <span id="user-name-badge"></span>
+      </div>
+    </div>
   </div>
 
   <div class="nav">
@@ -384,6 +466,17 @@ body{
 
   <!-- SETTINGS -->
   <div id="sec-settings" class="sec">
+    <div class="log-form">
+      <div class="log-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#6D28D9" stroke-width="2"/><path d="M4 21C4 17 7.5 14 12 14S20 17 20 21" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/></svg>
+        الحساب
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-lbl" id="account-name-display">—</div><div class="setting-sub">بياناتك متزامنة على كل أجهزتك</div></div>
+        <button class="btn-secondary" style="width:auto;padding:8px 16px;margin:0" onclick="logoutUser()">تسجيل خروج</button>
+      </div>
+    </div>
+
     <div class="log-form" id="notif-section">
       <div class="log-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -457,6 +550,11 @@ body{
 
 <div class="toast" id="toast"></div>
 
+<script>
+  // بعد أول استخدام، هيظهر لك تحذير في Console يقول إن بين جديد اتعمل.
+  // لو حصل ده، خد الـ ID وضعه هنا بدل null عشان كل الأجهزة تستخدم نفس البين المشترك.
+  window.IFRS_MAIN_BIN_ID = null;
+</script>
 <script src="app.js"></script>
 </body>
 </html>

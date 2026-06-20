@@ -1,4 +1,7 @@
-// ===== IFRS Dip Tracker — App Logic =====
+// ===== IFRS Dip Tracker — App Logic (cloud sync via JSONBin + secret code) =====
+
+const JSONBIN_MASTER_KEY = '$2a$10$B96C8MtRfq7iNFn3KKSn1.Yb9a3IYnSEjpPSwoBB2CKccogYuTpVq';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
 
 const STANDARDS = [
   {id:'s01',name:'IFRS 15 — إيرادات العقود مع العملاء',days:5,color:'#6D28D9'},
@@ -38,11 +41,6 @@ const STANDARDS = [
 const TODAY_AR=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 const MONTHS_AR=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
-let state = (() => {
-  try { return JSON.parse(localStorage.getItem('ifrs_pro_v3')||'null') || defaultState(); }
-  catch(e){ return defaultState(); }
-})();
-
 function defaultState(){
   return {
     startDate: new Date().toISOString().slice(0,10),
@@ -56,8 +54,241 @@ function defaultState(){
   };
 }
 
-function save(){ try{localStorage.setItem('ifrs_pro_v3',JSON.stringify(state));}catch(e){} }
+let state = defaultState();
+let currentUserKey = null;
+let currentUserName = null;
+let currentBinId = null;
+let saveTimer = null;
 
+// ========== HASH HELPER ==========
+async function deriveKey(name, pin){
+  const raw = `ifrs-tracker::${name.trim().toLowerCase()}::${pin.trim()}`;
+  const enc = new TextEncoder().encode(raw);
+  const hashBuf = await crypto.subtle.digest('SHA-256', enc);
+  const hashArr = Array.from(new Uint8Array(hashBuf));
+  return hashArr.map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ========== LOCAL SESSION ==========
+function saveSession(name, pin, binId){
+  try{ localStorage.setItem('ifrs_session_v1', JSON.stringify({name, pin, binId})); }catch(e){}
+}
+function loadSession(){
+  try{ const s = localStorage.getItem('ifrs_session_v1'); return s ? JSON.parse(s) : null; }catch(e){ return null; }
+}
+function clearSession(){ try{ localStorage.removeItem('ifrs_session_v1'); }catch(e){} }
+
+// ========== LOCAL CACHE ==========
+function cacheLocally(){
+  if(!currentUserKey) return;
+  try{ localStorage.setItem('ifrs_cache_'+currentUserKey, JSON.stringify(state)); }catch(e){}
+}
+
+// ========== JSONBIN: SINGLE SHARED BIN FOR ALL USERS ==========
+// We store ALL users' data inside ONE bin as { users: { [userKey]: {name, state} } }.
+// This avoids needing a separate "directory" bin and keeps setup to one fixed ID.
+let _mainBinIdCache = null;
+
+async function getOrCreateMainBin(){
+  if(_mainBinIdCache) return _mainBinIdCache;
+
+  if(window.IFRS_MAIN_BIN_ID){
+    _mainBinIdCache = window.IFRS_MAIN_BIN_ID;
+    return _mainBinIdCache;
+  }
+
+  let id = localStorage.getItem('ifrs_main_bin_id');
+  if(id){ _mainBinIdCache = id; return id; }
+
+  const res = await fetch(`${JSONBIN_BASE}/b`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': JSONBIN_MASTER_KEY,
+      'X-Bin-Name': 'ifrs-tracker-all-users'
+    },
+    body: JSON.stringify({ users: {} })
+  });
+  const json = await res.json();
+  id = json.metadata.id;
+  localStorage.setItem('ifrs_main_bin_id', id);
+  _mainBinIdCache = id;
+  console.warn('⚠️ Created a NEW shared bin:', id, '— for sync to work across devices, set window.IFRS_MAIN_BIN_ID to this value in index.html, then re-upload.');
+  return id;
+}
+
+async function readAllUsers(){
+  const binId = await getOrCreateMainBin();
+  const res = await fetch(`${JSONBIN_BASE}/b/${binId}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
+  if(!res.ok) throw new Error('فشل الاتصال بالسحابة');
+  const json = await res.json();
+  return { binId, users: (json.record && json.record.users) ? json.record.users : {} };
+}
+
+async function writeAllUsers(binId, users){
+  const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_MASTER_KEY },
+    body: JSON.stringify({ users })
+  });
+  if(!res.ok) throw new Error('فشل الحفظ');
+  return res.json();
+}
+
+// ========== AUTH FLOW ==========
+function switchAuthTab(tab){
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('auth-submit-btn').dataset.mode = tab;
+  document.getElementById('auth-submit-btn').textContent = tab==='login' ? 'دخول' : 'إنشاء حساب جديد';
+  document.getElementById('auth-error').textContent = '';
+  document.getElementById('auth-footer').innerHTML = tab==='login'
+    ? 'مفيش حساب؟ <a onclick="switchAuthTab(\'signup\')">اعمل حساب جديد</a>'
+    : 'عندك حساب فعلاً؟ <a onclick="switchAuthTab(\'login\')">سجّل دخولك</a>';
+}
+
+async function handleAuthSubmit(){
+  const name = document.getElementById('auth-email').value.trim();
+  const pin = document.getElementById('auth-password').value.trim();
+  const errEl = document.getElementById('auth-error');
+  const btn = document.getElementById('auth-submit-btn');
+  const mode = btn.dataset.mode || 'login';
+  errEl.style.color = '';
+  errEl.textContent = '';
+
+  if(!name){ errEl.textContent='اكتب اسمك'; return; }
+  if(!pin || pin.length < 4){ errEl.textContent='الكود لازم يكون 4 أرقام أو حروف على الأقل'; return; }
+
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'جاري المعالجة...';
+
+  try{
+    const userKey = await deriveKey(name, pin);
+    const { binId, users } = await readAllUsers();
+    const existing = users[userKey];
+
+    if(mode === 'signup'){
+      if(existing){
+        errEl.textContent = 'الاسم والكود دول مستخدمين قبل كده. جرب تسجيل الدخول أو اختار كود مختلف.';
+        btn.disabled=false; btn.textContent=original;
+        return;
+      }
+      const initial = defaultState();
+      users[userKey] = { name, state: initial };
+      await writeAllUsers(binId, users);
+      loginSuccess(userKey, name, binId, initial);
+    } else {
+      if(!existing){
+        errEl.textContent = 'مفيش حساب بهذا الاسم والكود. تأكد من الاسم والكود، أو اعمل حساب جديد.';
+        btn.disabled=false; btn.textContent=original;
+        return;
+      }
+      const loadedState = { ...defaultState(), ...existing.state };
+      loginSuccess(userKey, name, binId, loadedState);
+    }
+  }catch(e){
+    console.error(e);
+    errEl.textContent = 'حصل خطأ في الاتصال. تأكد من النت وجرب تاني.';
+    btn.disabled=false; btn.textContent=original;
+  }
+}
+
+function loginSuccess(userKey, name, binId, loadedState){
+  currentUserKey = userKey;
+  currentUserName = name;
+  currentBinId = binId;
+  state = loadedState;
+  saveSession(name, document.getElementById('auth-password').value.trim(), binId);
+  cacheLocally();
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('account-name-display').textContent = name;
+  const nameBadge = document.getElementById('user-name-badge');
+  if(nameBadge) nameBadge.textContent = name;
+
+  renderAll();
+  showSyncStatus('synced');
+  if(state.notifEnabled) scheduleNotification();
+}
+
+async function logoutUser(){
+  if(!confirm('هل تريد تسجيل الخروج؟')) return;
+  clearSession();
+  currentUserKey = null; currentUserName = null; currentBinId = null;
+  state = defaultState();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-password').value = '';
+}
+
+async function initAuth(){
+  const session = loadSession();
+  if(session && session.name && session.pin){
+    try{
+      const userKey = await deriveKey(session.name, session.pin);
+      const { binId, users } = await readAllUsers();
+      const existing = users[userKey];
+      if(existing){
+        const loadedState = { ...defaultState(), ...existing.state };
+        loginSuccess(userKey, session.name, binId, loadedState);
+      } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
+    }catch(e){
+      console.error('Auto-login failed, falling back to cached data', e);
+      const userKey = await deriveKey(session.name, session.pin);
+      const cached = (() => {
+        try{ const c = localStorage.getItem('ifrs_cache_'+userKey); return c?JSON.parse(c):null; }catch(_){ return null; }
+      })();
+      if(cached){
+        loginSuccess(userKey, session.name, session.binId, cached);
+        showSyncStatus('offline');
+      } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
+    }
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+  document.getElementById('login-screen').style.display = 'none';
+}
+
+// ========== CLOUD SAVE (debounced) ==========
+function showSyncStatus(status){
+  const el = document.getElementById('sync-badge');
+  if(!el) return;
+  const map = { saving: '⏳ بيحفظ...', synced: '☁️ محفوظ', offline: '⚠️ غير متصل' };
+  const span = el.querySelector('span');
+  if(span) span.textContent = map[status] || '';
+  el.className = 'sync-badge sync-' + status;
+}
+
+function save(){
+  cacheLocally();
+  if(!currentUserKey || !currentBinId) return;
+  if(saveTimer) clearTimeout(saveTimer);
+  showSyncStatus('saving');
+  saveTimer = setTimeout(async () => {
+    try{
+      // Read-merge-write to avoid clobbering other users' entries in the shared bin
+      const { binId, users } = await readAllUsers();
+      users[currentUserKey] = { name: currentUserName, state };
+      await writeAllUsers(binId, users);
+      showSyncStatus('synced');
+    }catch(e){
+      console.error('Cloud save failed', e);
+      showSyncStatus('offline');
+    }
+  }, 900);
+}
+
+// ========== DATE / SCHEDULE HELPERS ==========
 function dateStr(d){ return d.toISOString().slice(0,10); }
 function addDays(ds, n){ const d=new Date(ds); d.setDate(d.getDate()+n); return d; }
 function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
@@ -297,7 +528,6 @@ function renderProgress(){
   document.getElementById('prog-done-lbl').textContent=done+' معيار من '+total;
   document.getElementById('prog-hrs-lbl').textContent=getTotalHrs().toFixed(1)+' ساعة';
 
-  // week strip
   const studiedSet = new Set(state.logs.map(l=>l.date));
   const dayNames=['أح','إث','ثل','أر','خم','جم','سب'];
   let ws='';
@@ -314,7 +544,6 @@ function renderProgress(){
   renderBarChart();
   renderDonutChart();
 
-  // per-standard progress
   let spHtml='';
   STANDARDS.forEach(s=>{
     const status=state.unitStatus[s.id]||'todo';
@@ -361,7 +590,6 @@ function renderBarChart(){
       bars += `<text x="${x+barW/2}" y="${h-4}" font-size="8" fill="#6B6480" text-anchor="middle" font-family="Outfit">${d.date.getDate()}</text>`;
     }
   });
-  // target line
   const targetY = h-padBottom-((state.dailyHrs/maxHrs)*(h-padBottom-padTop));
   bars += `<line x1="0" y1="${targetY}" x2="${w}" y2="${targetY}" stroke="#F43F5E" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
   bars += `<text x="${w-2}" y="${targetY-4}" font-size="7.5" fill="#F43F5E" text-anchor="end" font-family="Cairo" font-weight="600">الهدف اليومي</text>`;
@@ -451,7 +679,7 @@ function addLog(){
 }
 
 function resetAll(){
-  if(confirm('هل أنت متأكد؟ سيتم مسح كل البيانات!')){
+  if(confirm('هل أنت متأكد؟ سيتم مسح كل بياناتك من السحابة!')){
     state=defaultState(); save(); renderAll();
     showToast('تم مسح البيانات');
   }
@@ -513,11 +741,6 @@ async function enableNotifications(){
     updateNotifBadge();
     showToast('تم تفعيل التنبيه اليومي ✓');
     scheduleNotification();
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.ready.then(reg=>{
-        reg.active?.postMessage({type:'SCHEDULE_NOTIF', time: state.notifTime});
-      });
-    }
   } else {
     showToast('محتاج تسمح بالتنبيهات من إعدادات المتصفح');
   }
@@ -537,7 +760,7 @@ function scheduleNotification(){
 
   notifTimeoutId = setTimeout(()=>{
     fireStudyNotification();
-    scheduleNotification(); // reschedule for next day
+    scheduleNotification();
   }, msUntil);
 }
 
@@ -586,14 +809,12 @@ function dismissInstall(){
   localStorage.setItem('install_dismissed','1');
 }
 
-// register service worker
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW failed', e));
   });
 }
 
-// init
-renderAll();
-if(state.notifEnabled) scheduleNotification();
-updateNotifBadge();
+// ========== INIT ==========
+document.getElementById('auth-password').addEventListener('keypress', (e)=>{ if(e.key==='Enter') handleAuthSubmit(); });
+initAuth();
