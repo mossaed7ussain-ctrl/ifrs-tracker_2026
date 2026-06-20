@@ -84,9 +84,19 @@ function cacheLocally(){
   try{ localStorage.setItem('ifrs_cache_'+currentUserKey, JSON.stringify(state)); }catch(e){}
 }
 
+// ========== FETCH WITH TIMEOUT ==========
+async function fetchWithTimeout(url, options={}, timeoutMs=10000){
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, {...options, signal: controller.signal});
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ========== JSONBIN: SINGLE SHARED BIN FOR ALL USERS ==========
-// We store ALL users' data inside ONE bin as { users: { [userKey]: {name, state} } }.
-// This avoids needing a separate "directory" bin and keeps setup to one fixed ID.
 let _mainBinIdCache = null;
 
 async function getOrCreateMainBin(){
@@ -100,7 +110,7 @@ async function getOrCreateMainBin(){
   let id = localStorage.getItem('ifrs_main_bin_id');
   if(id){ _mainBinIdCache = id; return id; }
 
-  const res = await fetch(`${JSONBIN_BASE}/b`, {
+  const res = await fetchWithTimeout(`${JSONBIN_BASE}/b`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -119,19 +129,21 @@ async function getOrCreateMainBin(){
 
 async function readAllUsers(){
   const binId = await getOrCreateMainBin();
-  const res = await fetch(`${JSONBIN_BASE}/b/${binId}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
-  if(!res.ok) throw new Error('فشل الاتصال بالسحابة');
+  const res = await fetchWithTimeout(`${JSONBIN_BASE}/b/${binId}/latest`, {
+    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+  });
+  if(!res.ok) throw new Error('فشل الاتصال بالسحابة ('+res.status+')');
   const json = await res.json();
   return { binId, users: (json.record && json.record.users) ? json.record.users : {} };
 }
 
 async function writeAllUsers(binId, users){
-  const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
+  const res = await fetchWithTimeout(`${JSONBIN_BASE}/b/${binId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_MASTER_KEY },
     body: JSON.stringify({ users })
   });
-  if(!res.ok) throw new Error('فشل الحفظ');
+  if(!res.ok) throw new Error('فشل الحفظ ('+res.status+')');
   return res.json();
 }
 
@@ -177,7 +189,7 @@ async function handleAuthSubmit(){
       const initial = defaultState();
       users[userKey] = { name, state: initial };
       await writeAllUsers(binId, users);
-      loginSuccess(userKey, name, binId, initial);
+      loginSuccess(userKey, name, binId, initial, pin);
     } else {
       if(!existing){
         errEl.textContent = 'مفيش حساب بهذا الاسم والكود. تأكد من الاسم والكود، أو اعمل حساب جديد.';
@@ -185,24 +197,42 @@ async function handleAuthSubmit(){
         return;
       }
       const loadedState = { ...defaultState(), ...existing.state };
-      loginSuccess(userKey, name, binId, loadedState);
+      loginSuccess(userKey, name, binId, loadedState, pin);
     }
   }catch(e){
     console.error(e);
+    // Try offline login if we have cached data
+    try{
+      const userKey = await deriveKey(name, pin);
+      const cached = (() => {
+        try{ const c = localStorage.getItem('ifrs_cache_'+userKey); return c?JSON.parse(c):null; }catch(_){ return null; }
+      })();
+      if(cached){
+        const storedBinId = (() => {
+          try{ const s = localStorage.getItem('ifrs_session_v1'); return s?JSON.parse(s).binId:null; }catch(_){ return null; }
+        })();
+        loginSuccess(userKey, name, storedBinId||null, cached, pin);
+        showSyncStatus('offline');
+        showToast('تم الدخول بدون إنترنت — البيانات محفوظة محليًا');
+        return;
+      }
+    }catch(_){}
     errEl.textContent = 'حصل خطأ في الاتصال. تأكد من النت وجرب تاني.';
     btn.disabled=false; btn.textContent=original;
   }
 }
 
-function loginSuccess(userKey, name, binId, loadedState){
+function loginSuccess(userKey, name, binId, loadedState, pin){
   currentUserKey = userKey;
   currentUserName = name;
   currentBinId = binId;
   state = loadedState;
-  saveSession(name, document.getElementById('auth-password').value.trim(), binId);
+  const pinVal = pin || (document.getElementById('auth-password') ? document.getElementById('auth-password').value.trim() : '');
+  saveSession(name, pinVal, binId);
   cacheLocally();
 
   document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('account-name-display').textContent = name;
   const nameBadge = document.getElementById('user-name-badge');
@@ -225,6 +255,11 @@ async function logoutUser(){
 }
 
 async function initAuth(){
+  // Show login-screen (loading) immediately, hide after check
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+
   const session = loadSession();
   if(session && session.name && session.pin){
     try{
@@ -233,30 +268,39 @@ async function initAuth(){
       const existing = users[userKey];
       if(existing){
         const loadedState = { ...defaultState(), ...existing.state };
-        loginSuccess(userKey, session.name, binId, loadedState);
-      } else {
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('app').style.display = 'none';
+        loginSuccess(userKey, session.name, binId, loadedState, session.pin);
+        return;
       }
-    }catch(e){
-      console.error('Auto-login failed, falling back to cached data', e);
-      const userKey = await deriveKey(session.name, session.pin);
+      // User not found in cloud — try cached data
       const cached = (() => {
         try{ const c = localStorage.getItem('ifrs_cache_'+userKey); return c?JSON.parse(c):null; }catch(_){ return null; }
       })();
       if(cached){
-        loginSuccess(userKey, session.name, session.binId, cached);
+        loginSuccess(userKey, session.name, session.binId||binId, cached, session.pin);
         showSyncStatus('offline');
-      } else {
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('app').style.display = 'none';
+        return;
       }
+    }catch(e){
+      console.error('Auto-login failed, falling back to cached data', e);
+      // Network error - try local cache
+      try{
+        const userKey = await deriveKey(session.name, session.pin);
+        const cached = (() => {
+          try{ const c = localStorage.getItem('ifrs_cache_'+userKey); return c?JSON.parse(c):null; }catch(_){ return null; }
+        })();
+        if(cached){
+          loginSuccess(userKey, session.name, session.binId||null, cached, session.pin);
+          showSyncStatus('offline');
+          return;
+        }
+      }catch(_){}
     }
-  } else {
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
   }
+
+  // No valid session or cache — show auth screen
   document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
 }
 
 // ========== CLOUD SAVE (debounced) ==========
@@ -276,7 +320,6 @@ function save(){
   showSyncStatus('saving');
   saveTimer = setTimeout(async () => {
     try{
-      // Read-merge-write to avoid clobbering other users' entries in the shared bin
       const { binId, users } = await readAllUsers();
       users[currentUserKey] = { name: currentUserName, state };
       await writeAllUsers(binId, users);
@@ -816,5 +859,9 @@ if('serviceWorker' in navigator){
 }
 
 // ========== INIT ==========
-document.getElementById('auth-password').addEventListener('keypress', (e)=>{ if(e.key==='Enter') handleAuthSubmit(); });
+document.addEventListener('DOMContentLoaded', ()=>{
+  if(document.getElementById('auth-password')){
+    document.getElementById('auth-password').addEventListener('keypress', (e)=>{ if(e.key==='Enter') handleAuthSubmit(); });
+  }
+});
 initAuth();
