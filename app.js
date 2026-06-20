@@ -463,6 +463,7 @@ function renderToday(){
     }).join('');
   }
 
+  renderTimer();
   renderWeekSummary();
   renderMonthSummary();
 }
@@ -865,3 +866,119 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 });
 initAuth();
+
+// ========== STUDY TIMER ==========
+let timerInterval = null;
+let timerEndTime = null;
+let timerRunning = false;
+
+function renderTimer(){
+  const container = document.getElementById('study-timer-section');
+  if(!container) return;
+
+  if(!timerRunning){
+    const hrs = state.dailyHrs || 2;
+    container.innerHTML = `
+      <div style="background:white;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(109,40,217,0.07);border:1.5px solid var(--border)">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text-primary);display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6D28D9" stroke-width="2.3"/><path d="M12 7V12L15 14" stroke="#6D28D9" stroke-width="2.3" stroke-linecap="round"/></svg>
+          مؤقت المذاكرة
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <label style="font-size:12px;color:var(--text-secondary);font-weight:600;min-width:62px">المدة</label>
+          <select id="timer-hrs-select" style="flex:1;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg-soft);color:var(--text-primary);font-size:13px;font-family:'Cairo',sans-serif;direction:rtl">
+            <option value="0.5">30 دقيقة</option>
+            <option value="1">ساعة</option>
+            <option value="1.5">ساعة ونص</option>
+            <option value="2" ${hrs<=2?'selected':''}>ساعتين</option>
+            <option value="2.5" ${hrs==2.5?'selected':''}>ساعتين ونص</option>
+            <option value="3" ${hrs>=3?'selected':''}>3 ساعات</option>
+          </select>
+        </div>
+        <button onclick="startTimer()" style="width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,#6D28D9,#EC4899);color:white;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Cairo',sans-serif;box-shadow:0 4px 14px rgba(109,40,217,0.3)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polygon points="5,3 19,12 5,21" fill="white"/></svg>
+          ابدأ المذاكرة
+        </button>
+      </div>`;
+  } else {
+    const now = Date.now();
+    const remaining = Math.max(0, timerEndTime - now);
+    const totalMs = timerDurationMs;
+    const pct = Math.round((1 - remaining/totalMs)*100);
+    const mins = Math.floor(remaining/60000);
+    const secs = Math.floor((remaining%60000)/1000);
+    const hh = Math.floor(mins/60);
+    const mm = mins%60;
+    const timeStr = hh>0 ? `${hh}:${String(mm).padStart(2,'0')}:${String(secs).padStart(2,'0')}` : `${String(mm).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    const circumference = 2*Math.PI*45;
+    const dashOffset = circumference*(1-pct/100);
+
+    container.innerHTML = `
+      <div style="background:white;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(109,40,217,0.07);border:1.5px solid var(--border)">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text-primary);display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#6D28D9" stroke-width="2.3"/><path d="M12 7V12L15 14" stroke="#6D28D9" stroke-width="2.3" stroke-linecap="round"/></svg>
+          جلسة مذاكرة جارية...
+        </div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="position:relative;width:110px;height:110px;flex-shrink:0">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="45" fill="none" stroke="#F3F0FA" stroke-width="8"/>
+              <circle cx="55" cy="55" r="45" fill="none" stroke="url(#tgrad)" stroke-width="8"
+                stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+                stroke-linecap="round" transform="rotate(-90 55 55)" style="transition:stroke-dashoffset 1s linear"/>
+              <defs><linearGradient id="tgrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#6D28D9"/><stop offset="100%" stop-color="#EC4899"/>
+              </linearGradient></defs>
+              <text x="55" y="50" font-size="18" font-weight="700" text-anchor="middle" fill="#1E1B2E" font-family="Outfit">${timeStr}</text>
+              <text x="55" y="68" font-size="9" text-anchor="middle" fill="#6B6480" font-family="Cairo">متبقي</text>
+            </svg>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;font-weight:600">${pct}% مكتمل</div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;margin-bottom:12px">
+              <div style="height:100%;width:${pct}%;background:linear-gradient(135deg,#6D28D9,#EC4899);border-radius:4px;transition:width 1s linear"></div>
+            </div>
+            <button onclick="stopTimer()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;background:white;color:#F43F5E;font-size:13px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">
+              ⏹ إيقاف
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    if(remaining === 0) timerDone();
+  }
+}
+
+let timerDurationMs = 0;
+
+function startTimer(){
+  const sel = document.getElementById('timer-hrs-select');
+  const hrs = parseFloat(sel ? sel.value : state.dailyHrs);
+  timerDurationMs = hrs * 3600000;
+  timerEndTime = Date.now() + timerDurationMs;
+  timerRunning = true;
+  renderTimer();
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    renderTimer();
+    if(Date.now() >= timerEndTime){ clearInterval(timerInterval); timerDone(); }
+  }, 1000);
+}
+
+function stopTimer(){
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerInterval = null;
+  renderTimer();
+}
+
+function timerDone(){
+  timerRunning = false;
+  clearInterval(timerInterval);
+  // Fire notification if possible
+  if(Notification.permission==='granted'){
+    new Notification('🎉 انتهت جلسة المذاكرة!', {body:'أحسنت! لا تنسى تسجل إنجازك.', icon:'icon-192.png'});
+  }
+  showToast('🎉 انتهت الجلسة! سجّل إنجازك دلوقتي');
+  renderTimer();
+}
