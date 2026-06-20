@@ -16,7 +16,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
 
 :root{
-  /* Vivid palette */
   --purple:#6D28D9;
   --purple-light:#A78BFA;
   --purple-dark:#4C1D95;
@@ -27,18 +26,15 @@
   --pink:#EC4899;
   --pink-light:#F9A8D4;
   --amber:#F59E0B;
-
   --bg:#FAFAFC;
   --bg-card:#FFFFFF;
   --bg-soft:#F3F0FA;
   --text-primary:#1E1B2E;
   --text-secondary:#6B6480;
   --border:#E8E4F3;
-
   --grad-hero: linear-gradient(135deg, #6D28D9 0%, #EC4899 100%);
   --grad-turq: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%);
   --grad-coral: linear-gradient(135deg, #F43F5E 0%, #F59E0B 100%);
-
   --radius-sm:10px;
   --radius-md:16px;
   --radius-lg:22px;
@@ -47,58 +43,27 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{
-  font-family:'Cairo',sans-serif;
-  background:var(--bg);
-  color:var(--text-primary);
-  min-height:100vh;
-  padding-bottom:env(safe-area-inset-bottom);
-}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;padding-bottom:env(safe-area-inset-bottom);}
 .numfont{font-family:'Outfit',sans-serif}
-
 #app{max-width:480px;margin:0 auto;padding:0 14px 90px;min-height:100vh}
 
-/* HEADER */
-.appbar{
-  position:sticky;top:0;z-index:50;
-  background:var(--grad-hero);
-  padding:calc(env(safe-area-inset-top) + 14px) 16px 16px;
-  margin:0 -14px 14px;
-  border-radius:0 0 24px 24px;
-  color:white;
-  box-shadow:var(--shadow-pop);
-}
+.appbar{position:sticky;top:0;z-index:50;background:var(--grad-hero);padding:calc(env(safe-area-inset-top) + 14px) 16px 16px;margin:0 -14px 14px;border-radius:0 0 24px 24px;color:white;box-shadow:var(--shadow-pop);}
 .appbar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .appbar-title{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
 .appbar-date{font-size:11px;background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;backdrop-filter:blur(4px)}
 .bell-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;border:none;color:white;cursor:pointer;position:relative}
 .bell-dot{position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--amber);border:1.5px solid var(--purple)}
 
-/* NAV */
 .nav{display:flex;gap:4px;background:var(--bg-soft);padding:5px;border-radius:18px;margin-bottom:16px}
 .nav-btn{flex:1;font-size:11.5px;padding:9px 4px;border:none;background:none;color:var(--text-secondary);border-radius:14px;cursor:pointer;font-weight:600;font-family:'Cairo',sans-serif;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .2s}
 .nav-btn.active{background:white;color:var(--purple);box-shadow:0 2px 8px rgba(109,40,217,0.15)}
 .nav-btn svg{width:18px;height:18px}
-
 .sec{display:none;animation:fadeIn .3s ease}
 .sec.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* TODAY HERO CARD */
-.hero-card{
-  background:var(--grad-hero);
-  border-radius:var(--radius-lg);
-  padding:18px;
-  margin-bottom:12px;
-  color:white;
-  box-shadow:var(--shadow-pop);
-  position:relative;
-  overflow:hidden;
-}
-.hero-card::before{
-  content:'';position:absolute;width:140px;height:140px;border-radius:50%;
-  background:rgba(255,255,255,0.08);top:-50px;left:-30px;
-}
+.hero-card{background:var(--grad-hero);border-radius:var(--radius-lg);padding:18px;margin-bottom:12px;color:white;box-shadow:var(--shadow-pop);position:relative;overflow:hidden;}
+.hero-card::before{content:'';position:absolute;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.08);top:-50px;left:-30px;}
 .hero-phase{font-size:11px;opacity:0.85;margin-bottom:4px;font-weight:600;position:relative;z-index:1}
 .hero-task{font-size:17px;font-weight:700;line-height:1.4;margin-bottom:12px;position:relative;z-index:1}
 .hero-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:relative;z-index:1}
@@ -107,25 +72,16 @@ body{
 .hero-bar-fill{height:100%;background:white;border-radius:4px;transition:width .6s}
 .hero-pct-lbl{font-size:10.5px;margin-top:5px;opacity:0.85;position:relative;z-index:1}
 
-/* STAT GRID */
 .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-.stat-card{
-  border-radius:var(--radius-md);
-  padding:13px 14px;
-  box-shadow:var(--shadow-card);
-  position:relative;
-  overflow:hidden;
-}
+.stat-card{border-radius:var(--radius-md);padding:13px 14px;box-shadow:var(--shadow-card);position:relative;overflow:hidden;}
 .stat-card.c1{background:linear-gradient(135deg,#FFFFFF,#F3F0FA)}
 .stat-icon{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
 .stat-lbl{font-size:11px;color:var(--text-secondary);margin-bottom:2px;font-weight:600}
 .stat-val{font-size:24px;font-weight:700;color:var(--text-primary);font-family:'Outfit',sans-serif;line-height:1}
 .stat-sub{font-size:10.5px;color:var(--text-secondary);margin-top:3px}
-
 .section-title{font-size:13px;font-weight:700;color:var(--text-primary);margin:18px 0 10px;display:flex;align-items:center;gap:6px}
 .section-title .dot{width:6px;height:6px;border-radius:50%}
 
-/* LOG FORM */
 .log-form{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
 .log-title{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text-primary);display:flex;align-items:center;gap:6px}
 .frow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
@@ -135,7 +91,6 @@ body{
 .btn-add{width:100%;padding:13px;border:none;border-radius:var(--radius-sm);background:var(--grad-hero);color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Cairo',sans-serif;box-shadow:0 4px 14px rgba(109,40,217,0.3)}
 .btn-add:active{transform:scale(0.98)}
 
-/* LOG ITEMS */
 .log-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
 .log-item:last-child{border-bottom:none}
 .log-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px;box-shadow:0 0 0 3px rgba(0,0,0,0.04)}
@@ -143,13 +98,11 @@ body{
 .log-name{font-size:13px;color:var(--text-primary);line-height:1.3;font-weight:600}
 .log-meta{font-size:11px;color:var(--text-secondary);margin-top:2px}
 .log-hrs{font-size:13px;font-weight:700;color:var(--purple);flex-shrink:0;font-family:'Outfit',sans-serif}
-
 .summary-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
 .summary-row{display:flex;gap:18px;margin-bottom:10px}
 .summary-item .num{font-size:22px;font-weight:700;color:var(--text-primary);font-family:'Outfit',sans-serif;line-height:1}
 .summary-item .lbl{font-size:10.5px;color:var(--text-secondary);margin-top:3px;font-weight:600}
 
-/* SCHEDULE */
 .phase-info{border-radius:var(--radius-md);padding:13px 15px;font-size:12.5px;margin-bottom:14px;line-height:1.6;font-weight:600}
 .std-card{background:var(--bg-card);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
 .std-card.current{border-color:var(--purple);box-shadow:0 4px 16px rgba(109,40,217,0.18)}
@@ -164,12 +117,10 @@ body{
 .s-done{background:#D7F5E9;color:#0E8050}
 .s-review{background:#FFE8D1;color:#B9560A}
 
-/* PROGRESS */
 .prog-hero{background:var(--grad-turq);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;color:white;box-shadow:0 8px 24px rgba(13,148,136,0.25)}
 .big-pct{font-size:46px;font-weight:800;font-family:'Outfit',sans-serif;line-height:1}
 .prog-bar-wrap{height:10px;background:rgba(255,255,255,0.3);border-radius:5px;margin:12px 0 8px;overflow:hidden}
 .prog-bar-fill{height:100%;border-radius:5px;background:white;transition:width .6s}
-
 .week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px}
 .wday{text-align:center}
 .wday-dot{width:32px;height:32px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Outfit',sans-serif}
@@ -177,10 +128,8 @@ body{
 .w-today{border:2px solid var(--purple);color:var(--purple);background:white}
 .w-miss{background:var(--bg-soft);color:var(--text-secondary)}
 .wday-lbl{font-size:9.5px;color:var(--text-secondary);font-weight:600}
-
 .chart-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)}
 .chart-title{font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text-primary)}
-
 .std-prog-row{padding:10px 0;border-bottom:1px solid var(--border)}
 .std-prog-row:last-child{border-bottom:none}
 .spr-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -189,67 +138,38 @@ body{
 .spr-bar-fill{height:100%;border-radius:3px}
 .spr-hrs{font-size:10.5px;color:var(--text-secondary);min-width:32px;text-align:left;font-family:'Outfit',sans-serif;font-weight:600}
 
-/* SETTINGS */
 .setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
 .setting-row:last-child{border-bottom:none}
 .setting-lbl{font-size:13px;color:var(--text-primary);font-weight:600}
 .setting-sub{font-size:11px;color:var(--text-secondary);margin-top:1px}
 .setting-row input,.setting-row select{font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text-primary);max-width:130px;font-family:'Cairo',sans-serif}
 .calc-val{font-size:12.5px;font-weight:700;color:var(--purple)}
-
 .btn-secondary{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Cairo',sans-serif}
 .btn-danger{color:var(--coral);border-color:var(--coral-light)}
 
-/* NOTIFICATION SETTINGS */
 .notif-banner{background:var(--grad-coral);border-radius:var(--radius-md);padding:14px;color:white;font-size:12.5px;margin-bottom:14px;line-height:1.6;font-weight:600}
 .notif-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,0.25);margin-top:6px}
 
-/* INSTALL PROMPT */
-.install-banner{
-  position:fixed;bottom:16px;left:14px;right:14px;max-width:452px;margin:0 auto;
-  background:var(--grad-hero);border-radius:var(--radius-md);padding:14px 16px;
-  color:white;box-shadow:var(--shadow-pop);display:none;z-index:100;
-  align-items:center;gap:12px;
-}
+.install-banner{position:fixed;bottom:16px;left:14px;right:14px;max-width:452px;margin:0 auto;background:var(--grad-hero);border-radius:var(--radius-md);padding:14px 16px;color:white;box-shadow:var(--shadow-pop);display:none;z-index:100;align-items:center;gap:12px;}
 .install-banner.show{display:flex}
 .install-banner .txt{flex:1;font-size:12.5px;font-weight:600;line-height:1.4}
 .install-banner button{background:white;color:var(--purple);border:none;padding:8px 16px;border-radius:20px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Cairo',sans-serif;white-space:nowrap}
 .install-close{background:none!important;color:white!important;padding:4px!important;font-size:18px!important}
-
-.toast{
-  position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--text-primary);color:white;padding:12px 22px;border-radius:30px;
-  font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25);
-  opacity:0;transition:all .3s;z-index:200;pointer-events:none;white-space:nowrap;
-}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text-primary);color:white;padding:12px 22px;border-radius:30px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.25);opacity:0;transition:all .3s;z-index:200;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
 .empty-state{text-align:center;padding:24px 12px;color:var(--text-secondary);font-size:13px}
 .empty-state svg{margin-bottom:8px;opacity:0.4}
 
-/* LOGIN SCREEN */
-#login-screen, #auth-screen{
-  position:fixed;inset:0;z-index:300;
-  background:var(--grad-hero);
-  display:flex;align-items:center;justify-content:center;
-  padding:24px;
-}
+#login-screen, #auth-screen{position:fixed;inset:0;z-index:300;background:var(--grad-hero);display:flex;align-items:center;justify-content:center;padding:24px;}
 #login-screen.hide{display:none}
-.login-card{
-  background:white;border-radius:var(--radius-lg);padding:28px 24px;
-  max-width:380px;width:100%;box-shadow:var(--shadow-pop);
-}
-.login-logo{
-  width:64px;height:64px;border-radius:18px;background:var(--grad-hero);
-  display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
-}
+.login-card{background:white;border-radius:var(--radius-lg);padding:28px 24px;max-width:380px;width:100%;box-shadow:var(--shadow-pop);}
+.login-logo{width:64px;height:64px;border-radius:18px;background:var(--grad-hero);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
 .login-title{font-size:19px;font-weight:700;text-align:center;color:var(--text-primary);margin-bottom:4px}
 .login-sub{font-size:12.5px;text-align:center;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
 .login-frow{margin-bottom:12px}
 .login-frow label{font-size:12px;color:var(--text-secondary);font-weight:600;display:block;margin-bottom:5px}
 .login-frow input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:var(--text-primary);font-size:14px;font-family:'Cairo',sans-serif;direction:rtl;letter-spacing:0.5px}
 .login-frow input:focus{outline:none;border-color:var(--purple)}
-.login-frow input#login-pin{direction:ltr;text-align:center;font-family:'Outfit',sans-serif;font-size:20px;letter-spacing:6px}
 .login-btn{width:100%;padding:13px;border:none;border-radius:var(--radius-sm);background:var(--grad-hero);color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;font-family:'Cairo',sans-serif;box-shadow:0 4px 14px rgba(109,40,217,0.3)}
 .login-btn:disabled{opacity:0.6}
 .login-toggle{text-align:center;margin-top:14px;font-size:12.5px;color:var(--text-secondary)}
@@ -285,12 +205,10 @@ body{
     </div>
     <div class="login-title">IFRS Dip Tracker</div>
     <div class="login-sub" id="auth-sub">سجّل دخولك لمتابعة تقدمك من أي جهاز. بياناتك خاصة بيك بس.</div>
-
     <div class="login-tabs">
       <button class="login-tab active" id="tab-login" onclick="switchAuthTab('login')">تسجيل الدخول</button>
       <button class="login-tab" id="tab-signup" onclick="switchAuthTab('signup')">حساب جديد</button>
     </div>
-
     <div class="login-frow">
       <label>اسمك</label>
       <input type="text" id="auth-email" placeholder="مثال: محمد أحمد" autocomplete="name">
@@ -385,6 +303,9 @@ body{
       </div>
     </div>
 
+    <!-- STUDY TIMER — هنا هيتعرض المؤقت تلقائياً -->
+    <div id="study-timer-section"></div>
+
     <div class="log-form">
       <div class="log-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="#6D28D9" stroke-width="2.5" stroke-linecap="round"/></svg>
@@ -443,23 +364,17 @@ body{
         <span id="prog-hrs-lbl">0 ساعة</span>
       </div>
     </div>
-
     <div class="section-title"><span class="dot" style="background:var(--purple)"></span>الأيام السبعة الأخيرة</div>
-    <div class="chart-card">
-      <div class="week-strip" id="week-strip"></div>
-    </div>
-
+    <div class="chart-card"><div class="week-strip" id="week-strip"></div></div>
     <div class="section-title"><span class="dot" style="background:var(--coral)"></span>ساعات آخر 14 يوم</div>
     <div class="chart-card">
       <svg id="bar-chart" viewBox="0 0 320 140" style="width:100%;height:140px;overflow:visible"></svg>
     </div>
-
     <div class="section-title"><span class="dot" style="background:var(--turquoise)"></span>توزيع الوقت حسب المعيار</div>
     <div class="chart-card">
       <svg id="donut-chart" viewBox="0 0 200 200" style="width:100%;max-width:200px;height:auto;display:block;margin:0 auto 12px"></svg>
       <div id="donut-legend"></div>
     </div>
-
     <div class="section-title"><span class="dot" style="background:var(--pink)"></span>تقدم كل معيار</div>
     <div class="chart-card" id="std-progress-list"></div>
   </div>
@@ -476,7 +391,6 @@ body{
         <button class="btn-secondary" style="width:auto;padding:8px 16px;margin:0" onclick="logoutUser()">تسجيل خروج</button>
       </div>
     </div>
-
     <div class="log-form" id="notif-section">
       <div class="log-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 01-3.46 0" stroke="#6D28D9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -495,7 +409,6 @@ body{
         تفعيل التنبيه اليومي
       </button>
     </div>
-
     <div class="log-form">
       <div class="log-title">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="#6D28D9" stroke-width="2"/><path d="M3 10H21M8 3V7M16 3V7" stroke="#6D28D9" stroke-width="2" stroke-linecap="round"/></svg>
@@ -534,7 +447,6 @@ body{
         <div class="calc-val" id="calc-total-hrs">—</div>
       </div>
     </div>
-
     <button class="btn-secondary btn-danger" onclick="resetAll()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M19 6L18 20A2 2 0 0116 22H8A2 2 0 016 20L5 6M10 6V4A2 2 0 0112 2H12A2 2 0 0114 4V6" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       مسح كل البيانات
@@ -551,8 +463,6 @@ body{
 <div class="toast" id="toast"></div>
 
 <script>
-  // بعد أول استخدام، هيظهر لك تحذير في Console يقول إن بين جديد اتعمل.
-  // لو حصل ده، خد الـ ID وضعه هنا بدل null عشان كل الأجهزة تستخدم نفس البين المشترك.
   window.IFRS_MAIN_BIN_ID = "6a365580da38895dfee2023a";
 </script>
 <script src="app.js"></script>
