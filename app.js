@@ -2,7 +2,7 @@
 
 const JSONBIN_MASTER_KEY = '$2a$10$B96C8MtRfq7iNFn3KKSn1.Yb9a3IYnSEjpPSwoBB2CKccogYuTpVq';
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
-const CHAT_ADMIN_PASSWORD = 'ADMIN_PASSWORD_HERE'; // غيّرها لكلمة سر الأدمن بتاعتك
+const CHAT_ADMIN_PASSWORD = 'Mossaed@12345'; // غيّرها لكلمة سر الأدمن بتاعتك
 
 const STANDARDS = [
   {id:'s01',name:'IFRS 15 — إيرادات العقود مع العملاء',days:5,color:'#6D28D9'},
