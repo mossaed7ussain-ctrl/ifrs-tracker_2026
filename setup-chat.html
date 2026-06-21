@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إعداد الشات — مرة واحدة بس</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#6D28D9,#EC4899);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:white;border-radius:20px;padding:28px 24px;max-width:480px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.2)}
+h1{font-size:18px;margin-bottom:12px;color:#1E1B2E}
+p{font-size:13.5px;line-height:1.7;color:#6B6480;margin-bottom:14px}
+button{width:100%;padding:13px;border:none;border-radius:10px;background:linear-gradient(135deg,#6D28D9,#EC4899);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif}
+button:disabled{opacity:0.6}
+#result{margin-top:18px;padding:14px;border-radius:10px;background:#F3F0FA;display:none}
+#result.show{display:block}
+#bin-id{font-family:monospace;font-size:15px;font-weight:700;color:#6D28D9;background:white;padding:8px 12px;border-radius:8px;display:block;margin:8px 0;word-break:break-all;border:1.5px solid #E8E4F3}
+.copy-btn{background:#0D9488;width:auto;padding:8px 16px;font-size:12.5px;margin-top:6px}
+.step{font-size:13px;color:#1E1B2E;margin-bottom:6px}
+.error{color:#F43F5E;font-size:13px;margin-top:10px}
+code{background:#F3F0FA;padding:2px 6px;border-radius:4px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>💬 إعداد الشات — مرة واحدة بس</h1>
+  <p>الصفحة دي بتنشئ غرفة شات واحدة مشتركة لكل المستخدمين. اعمل الخطوة دي <strong>مرة واحدة بس</strong>، وبعد كذا الشات هيشتغل لأي عدد مستخدمين على نفس الغرفة.</p>
+  <button id="create-btn" onclick="createChatBin()">إنشاء غرفة الشات</button>
+  <div id="result">
+    <div class="step">✅ تم! نسخ القيمة دي:</div>
+    <code id="bin-id" style="display:block"></code>
+    <button class="copy-btn" onclick="copyId()">نسخ</button>
+    <p style="margin-top:12px;margin-bottom:0">دلوقتي روح لملف <strong>index.html</strong> ودور على السطر:<br>
+    <code>window.IFRS_CHAT_BIN_ID = null;</code><br>
+    وغيّره ليصبح:<br>
+    <code>window.IFRS_CHAT_BIN_ID = "القيمة هنا";</code><br>
+    وبعدين ارفع index.html المعدّل فوق القديم على GitHub.</p>
+  </div>
+  <div class="error" id="error-msg"></div>
+</div>
+
+<script>
+const JSONBIN_MASTER_KEY = '$2a$10$B96C8MtRfq7iNFn3KKSn1.Yb9a3IYnSEjpPSwoBB2CKccogYuTpVq';
+
+async function createChatBin(){
+  const btn = document.getElementById('create-btn');
+  const errEl = document.getElementById('error-msg');
+  btn.disabled = true;
+  btn.textContent = 'جاري الإنشاء...';
+  errEl.textContent = '';
+  try{
+    const res = await fetch('https://api.jsonbin.io/v3/b', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_MASTER_KEY,
+        'X-Bin-Name': 'ifrs-tracker-chat'
+      },
+      body: JSON.stringify({ messages: [] })
+    });
+    if(!res.ok) throw new Error('فشل الطلب: ' + res.status);
+    const json = await res.json();
+    const id = json.metadata.id;
+    document.getElementById('bin-id').textContent = id;
+    document.getElementById('result').classList.add('show');
+    btn.textContent = 'تم الإنشاء ✓';
+  }catch(e){
+    errEl.textContent = 'حصل خطأ: ' + e.message + ' — تأكد من النت وجرب تاني.';
+    btn.disabled = false;
+    btn.textContent = 'إنشاء غرفة الشات';
+  }
+}
+
+function copyId(){
+  const text = document.getElementById('bin-id').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'تم النسخ ✓';
+    setTimeout(()=>{ btn.textContent='نسخ'; }, 1500);
+  });
+}
+</script>
+</body>
+</html>

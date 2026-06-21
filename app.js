@@ -2,7 +2,7 @@
 
 const JSONBIN_MASTER_KEY = '$2a$10$B96C8MtRfq7iNFn3KKSn1.Yb9a3IYnSEjpPSwoBB2CKccogYuTpVq';
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
-const CHAT_BIN_ID = '6a365580da38895dfee2023b'; // سيتم إنشاؤه تلقائياً أول مرة
+const CHAT_ADMIN_PASSWORD = 'ADMIN_PASSWORD_HERE'; // غيّرها لكلمة سر الأدمن بتاعتك
 
 const STANDARDS = [
   {id:'s01',name:'IFRS 15 — إيرادات العقود مع العملاء',days:5,color:'#6D28D9'},
@@ -127,6 +127,26 @@ async function writeChatMessages(binId,messages){
   const res=await fetchWithTimeout(`${JSONBIN_BASE}/b/${binId}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_MASTER_KEY},body:JSON.stringify({messages:trimmed})});
   if(!res.ok) throw new Error('chat write failed');
   return res.json();
+}
+
+async function deleteChatMessage(msgTs){
+  const pwd = prompt('اكتب كلمة سر الأدمن لحذف الرسالة:');
+  if(pwd === null) return; // user cancelled
+  if(pwd !== CHAT_ADMIN_PASSWORD){
+    showToast('كلمة السر غلط ❌');
+    return;
+  }
+  try{
+    const {binId, messages} = await readChatMessages();
+    const filtered = messages.filter(m => m.ts !== msgTs);
+    await writeChatMessages(binId, filtered);
+    chatMessages = filtered;
+    lastChatCount = filtered.length;
+    renderChatMessages();
+    showToast('تم حذف الرسالة ✓');
+  }catch(e){
+    showToast('فشل الحذف. جرب تاني.');
+  }
 }
 
 // ========== AUTH ==========
@@ -701,10 +721,15 @@ function renderChatMessages(){
       <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--grad-hero)':'linear-gradient(135deg,#0D9488,#5EEAD4)'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0">
         ${(m.userName||'?').charAt(0).toUpperCase()}
       </div>
-      <div style="max-width:70%">
+      <div style="max-width:70%;position:relative">
         ${!isMe?`<div style="font-size:10.5px;color:var(--text-secondary);margin-bottom:3px;font-weight:600;padding-${isMe?'left':'right'}:4px">${escapeHtml(m.userName||'')}</div>`:''}
         <div style="background:${isMe?'var(--grad-hero)':'white'};color:${isMe?'white':'var(--text-primary)'};padding:10px 13px;border-radius:${isMe?'16px 4px 16px 16px':'4px 16px 16px 16px'};box-shadow:var(--shadow-card);border:${isMe?'none':'1.5px solid var(--border)'}">${contentHtml}</div>
-        <div style="font-size:9.5px;color:var(--text-secondary);margin-top:3px;text-align:${isMe?'left':'right'};padding:0 4px">${timeStr}</div>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:${isMe?'flex-start':'flex-end'};margin-top:3px;padding:0 4px">
+          <button onclick="deleteChatMessage(${m.ts})" title="حذف الرسالة (أدمن فقط)" style="border:none;background:none;cursor:pointer;color:var(--text-secondary);opacity:0.5;padding:2px;display:flex;align-items:center">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 6H21M19 6L18 20A2 2 0 0116 22H8A2 2 0 016 20L5 6M10 6V4A2 2 0 0112 2H12A2 2 0 0114 4V6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span style="font-size:9.5px;color:var(--text-secondary)">${timeStr}</span>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -723,7 +748,7 @@ async function sendChatMessage(){
   if(btn){btn.disabled=true;btn.textContent='...';}
 
   try{
-    let msg={userKey:currentUserKey,userName:currentUserName,ts:Date.now()};
+    let msg={userKey:currentUserKey,userName:currentUserName,ts:Date.now()+Math.random()};
     if(chatAttachment){
       msg.type=chatAttachment.type; msg.data=chatAttachment.data;
       if(chatAttachment.name) msg.fileName=chatAttachment.name;
